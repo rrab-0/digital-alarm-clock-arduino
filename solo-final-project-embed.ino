@@ -1,9 +1,10 @@
 // TODO:
-// - make text scroll
 // - make alarm
-// - display clock, calendar properly
 // - implement light sensor to check brightness
 // - if can fix too much memory usage
+//  - problem is at library itself "MD_Parola P = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);"
+// //- display clock, calendar properly
+// //- make text scroll
 
 // Arduino DS3232RTC Library
 // https://github.com/JChristensen/DS3232RTC
@@ -34,7 +35,7 @@
 //
 // Jack Christensen 08Aug2013
 #include <MD_Parola.h>
-#include <MD_MAX72xx.h>
+// #include <MD_MAX72xx.h>
 #include <SPI.h>
 
 #include <DS3232RTC.h>  // https://github.com/JChristensen/DS3232RTC
@@ -46,6 +47,7 @@
 
 const uint16_t WAIT_TIME = 1000;
 
+#define LM_35 A0
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
 #define MAX_DEVICES 4
 
@@ -57,11 +59,11 @@ MD_Parola P = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
 
 DS3232RTC myRTC;
 
-char buffer[30];
+char buffer[60];
 
 void setup() {
   Serial.begin(115200);
-  Serial << F("\n" __FILE__ "\n" __DATE__ " " __TIME__ "\n");
+  // Serial << F("\n" __FILE__ "\n" __DATE__ " " __TIME__ "\n");
   myRTC.begin();
 
   // setSyncProvider() causes the Time library to synchronize with the
@@ -74,29 +76,12 @@ void setup() {
   P.begin();
   P.setIntensity(0);
   P.displayClear();
-
-  // char buffer[30];
-  // sprintf(buffer, "%s %s", __DATE__, __TIME__);
-  // P.displayScroll(buffer, PA_CENTER, PA_SCROLL_LEFT, 50);
 }
 
 void loop() {
   static time_t tLast;
   time_t t;
   tmElements_t tm;
-
-  // if (P.displayAnimate()) {
-  //   P.displayText("hello", PA_CENTER, 50, 50, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
-  //   P.displayReset();
-  // }
-
-  // P.print(__DATE__);
-  // P.print(__TIME__);
-
-  // if (P.displayAnimate()) {
-  //     P.displayText(buffer, PA_CENTER, 0, 0, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
-  //     P.displayReset();
-  //   }
 
   // check for input to set the RTC, minimum length is 12, i.e. yy,m,d,h,m,s
   if (Serial.available() >= 12) {
@@ -121,7 +106,7 @@ void loop() {
       myRTC.set(t);  // use the time_t value to ensure correct weekday is set
       setTime(t);
       Serial << F("RTC set to: ");
-      // printDateTime(t);
+      printDateTime(t);
 
       // sprintf(buffer, "%d %s %d %d:%d:%d", day(t), monthShortStr(month(t)), _DEC(year(t)), hour(t), minute(t), second(t));
       // P.displayText(buffer, PA_CENTER, 25, 25, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
@@ -136,59 +121,81 @@ void loop() {
 
   t = now();
   // sprintf(buffer, "%d.%d.%d > %d %s %d", hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)));
-  snprintf(buffer, sizeof(buffer),"%d.%d.%d > %d %s %d", hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)));
-  // if (t != tLast) {
-  //   tLast = t;
-  //   // printDateTime(t);
-  //   // if (second(t) == 0) {
-  //   //   float c = myRTC.temperature() / 4.;
-  //   //   float f = c * 9. / 5. + 32.;
-  //   //   Serial << F("  ") << c << F(" C  ") << f << F(" F");
-  //   // }
-  //   Serial << endl;
-  // }
+  if (t != tLast) {
+    tLast = t;
+    // prints calendar and clock
+    printDateTime(t);
+
+    // // prints celcius
+    // uint8_t c = myRTC.temperature() / 4.;
+    // Serial << c << F(" C  ");
+
+    // // from LM35 (celcius)
+    // int celcius = analogRead(LM_35);
+    // int displayCelcius = celcius * (5.0/1023.0) * 100;
+    // Serial << displayCelcius << F(" C");
+    // // displays to dot matrix
+    // snprintf(buffer, sizeof(buffer), "Iqbal Muchlis 5024201073 -> %d.%d.%d >> %d %s %d >> %d C", hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)), displayCelcius);
+    // // snprintf(buffer, sizeof(buffer), "%d C", celcius);
+    float voltage = analogRead(LM_35) * (5.0 / 1023.0);
+    float celcius = (voltage - 0.5) * 100.0;
+    Serial << celcius << F(" C");
+
+    snprintf(buffer, sizeof(buffer), "Iqbal Muchlis 5024201073 -> %d.%d.%d >> %d %s %d >> %0.2f C", hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)), celcius);
+
+
+
+    // THIS FLOAT BELOW IS EATING TOO MUCH MEMORY DONT DO IT
+
+    // (this was once a frightening float) uint8_t c = myRTC.temperature() / 4.;
+    // (this was once a frightening float) uint8_t f = c * 9. / 5. + 32.;
+    // Serial << F("  ") << c << F(" C  ") << f << F(" F");
+
+
+    Serial << endl;
+  }
   // sprintf(buffer, "%d %s %d %d:%d:%d", day(t), monthShortStr(month(t)), _DEC(year(t)), hour(t), minute(t), second(t));
   if (P.displayAnimate()) {
-    P.displayText(buffer, PA_CENTER, 50, 50, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
+    P.displayText(buffer, PA_CENTER, 25, 25, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
     P.displayReset();
   }
 }
 
-// // print date and time to Serial
-// void printDateTime(time_t t) {
-//   printDate(t);
-//   Serial << ' ';
-//   printTime(t);
+// print date and time to Serial
+void printDateTime(time_t t) {
+  printDate(t);
+  Serial << ' ';
+  printTime(t);
 
-//   // sprintf(buffer, "%d %s %d %d:%d:%d", day(t), monthShortStr(month(t)), _DEC(year(t)), hour(t), minute(t), second(t));
-//   // 23,05,09,16,53,10
-//   // sprintf(buffer, "%d.%d.%d > %d %s %d", hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)));
-//   // sprintf(buffer, "%d %s %d", day(t), monthShortStr(month(t)), _DEC(year(t)));
-//   // if (P.displayAnimate()) {
-//   //   P.displayText(buffer, PA_CENTER, 0, 0, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
-//   //   P.displayReset();
-//   // }
-// }
+  // sprintf(buffer, "%d %s %d %d:%d:%d", day(t), monthShortStr(month(t)), _DEC(year(t)), hour(t), minute(t), second(t));
+  // 23,05,09,16,53,10
+  // sprintf(buffer, "%d.%d.%d > %d %s %d", hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)));
+  // sprintf(buffer, "%d %s %d", day(t), monthShortStr(month(t)), _DEC(year(t)));
+  // if (P.displayAnimate()) {
+  //   P.displayText(buffer, PA_CENTER, 0, 0, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
+  //   P.displayReset();
+  // }
+}
 
-// // print time to Serial
-// void printTime(time_t t) {
-//   printI00(hour(t), ':');
-//   printI00(minute(t), ':');
-//   printI00(second(t), ' ');
-// }
+// print time to Serial
+void printTime(time_t t) {
+  printI00(hour(t), ':');
+  printI00(minute(t), ':');
+  printI00(second(t), ' ');
+}
 
-// // print date to Serial
-// void printDate(time_t t) {
-//   printI00(day(t), 0);
-//   Serial << monthShortStr(month(t)) << _DEC(year(t));
-// }
+// print date to Serial
+void printDate(time_t t) {
+  printI00(day(t), 0);
+  Serial << "-" << monthShortStr(month(t)) << "-" << _DEC(year(t));
+}
 
-// // Print an integer in "00" format (with leading zero),
-// // followed by a delimiter character to Serial.
-// // Input value assumed to be between 0 and 99.
-// void printI00(int val, char delim) {
-//   if (val < 10) Serial << '0';
-//   Serial << _DEC(val);
-//   if (delim > 0) Serial << delim;
-//   return;
-// }
+// Print an integer in "00" format (with leading zero),
+// followed by a delimiter character to Serial.
+// Input value assumed to be between 0 and 99.
+void printI00(int val, char delim) {
+  if (val < 10) Serial << '0';
+  Serial << _DEC(val);
+  if (delim > 0) Serial << delim;
+  return;
+}
