@@ -1,73 +1,38 @@
 // TODO:
+// - check if temp is accurate or not
 // - make alarm
 // - implement light sensor to check brightness
-// - if can fix too much memory usage
-//  - problem is at library itself "MD_Parola P = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);"
+// - if can fix high memory usage
+//  - problem is at library itself "MD_Parola P = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);" causes like 70% memory usage
 // //- display clock, calendar properly
 // //- make text scroll
 
-// Arduino DS3232RTC Library
-// https://github.com/JChristensen/DS3232RTC
-// Copyright (C) 2018 by Jack Christensen and licensed under
-// GNU GPL v3.0, https://www.gnu.org/licenses/gpl.html
-//
-// Example sketch to display the date and time from a DS3231
-// or DS3232 RTC every second. Display the temperature once per
-// minute. (The DS3231 does a temperature conversion once every
-// 64 seconds. This is also the default for the DS3232.)
-//
-// Set the date and time by entering the following on the Arduino
-// serial monitor:
-//  year,month,day,hour,minute,second,
-//
-// Where
-//  year can be two or four digits,
-//  month is 1-12,
-//  day is 1-31,
-//  hour is 0-23, and
-//  minute and second are 0-59.
-//
-// Entering the final comma delimiter (after "second") will avoid a
-// one-second timeout and will allow the RTC to be set more accurately.
-//
-// No validity checking is done, invalid values or incomplete syntax
-// in the input will result in an incorrect RTC setting.
-//
-// Jack Christensen 08Aug2013
-#include <MD_Parola.h>
-// #include <MD_MAX72xx.h>
+// dot matrix
+#include <MD_Parola.h> // https://github.com/MajicDesigns/MD_Parola
+// #include <MD_MAX72xx.h> // https://github.com/MajicDesigns/MD_MAX72XX)
 #include <SPI.h>
-
-#include <DS3232RTC.h>  // https://github.com/JChristensen/DS3232RTC
-#include <Streaming.h>  // https://github.com/janelia-arduino/Streaming
-#include <TimeLib.h>    // https://github.com/PaulStoffregen/Time
-
-#include <Wire.h>
-#include <time.h>
-
-#include <LM35.h>
-LM35 lm35(A0);
-
-const uint16_t WAIT_TIME = 1000;
-
-// #define LM_35 A0
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
 #define MAX_DEVICES 4
-
 #define CLK_PIN 13
 #define DATA_PIN 11
 #define CS_PIN 10
-
 MD_Parola P = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
-
+// real time clock
+#include <Streaming.h>  // https://github.com/janelia-arduino/Streaming
+#include <TimeLib.h>    // https://github.com/PaulStoffregen/Time
+#include <DS3232RTC.h>  // https://github.com/JChristensen/DS3232RTC
 DS3232RTC myRTC;
+// temp sensor
+#include <LM35.h> // https://github.com/wilmouths/LM35
+LM35 lm35(A0);
 
+// for snprintf
 char buffer[60];
 
 void setup() {
   Serial.begin(115200);
-  // Serial << F("\n" __FILE__ "\n" __DATE__ " " __TIME__ "\n");
   myRTC.begin();
+  P.begin();
 
   // setSyncProvider() causes the Time library to synchronize with the
   // external RTC by calling RTC.get() every five minutes by default.
@@ -76,12 +41,12 @@ void setup() {
   if (timeStatus() != timeSet) Serial << F(" FAIL!");
   Serial << endl;
 
-  P.begin();
-  P.setIntensity(0);
   P.displayClear();
 }
 
 void loop() {
+  P.setIntensity(0);
+  // change time_t (uint32_t) to uint16_t if need to free more memory
   static time_t tLast;
   time_t t;
   tmElements_t tm;
@@ -139,7 +104,7 @@ void loop() {
     // Serial << displayCelcius << F(" C");
     // displays to dot matrix
     // snprintf(buffer, sizeof(buffer), "Iqbal Muchlis 5024201073 -> %d.%d.%d >> %d %s %d >> %d C", hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)), displayCelcius);
-    Serial << lm35.getTemp(CELCIUS);
+    Serial << lm35.getTemp(CELCIUS) << " " << myRTC.temperature() / 4.0;
     int celciusTemp = lm35.getTemp(CELCIUS);
     snprintf(buffer, sizeof(buffer), "Iqbal Muchlis 5024201073 -> %d C >> %d.%d.%d >> %d %s %d", celciusTemp, hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)));
     // snprintf(buffer, sizeof(buffer), "%d C", celciusTemp);
@@ -197,8 +162,8 @@ void printDate(time_t t) {
   Serial << "-" << monthShortStr(month(t)) << "-" << _DEC(year(t));
 }
 
-// Print an integer in "00" format (with leading zero),
-// followed by a delimiter character to Serial.
+// Print to serial an integer in "00" format (with leading zero),
+// followed by a delimiter character.
 // Input value assumed to be between 0 and 99.
 void printI00(int val, char delim) {
   if (val < 10) Serial << '0';
