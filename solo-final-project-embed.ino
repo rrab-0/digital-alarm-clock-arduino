@@ -45,9 +45,12 @@
 #include <Wire.h>
 #include <time.h>
 
+#include <LM35.h>
+LM35 lm35(A0);
+
 const uint16_t WAIT_TIME = 1000;
 
-#define LM_35 A0
+// #define LM_35 A0
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
 #define MAX_DEVICES 4
 
@@ -130,18 +133,22 @@ void loop() {
     // uint8_t c = myRTC.temperature() / 4.;
     // Serial << c << F(" C  ");
 
-    // // from LM35 (celcius)
+    // from LM35 (celcius)
     // int celcius = analogRead(LM_35);
     // int displayCelcius = celcius * (5.0/1023.0) * 100;
     // Serial << displayCelcius << F(" C");
-    // // displays to dot matrix
+    // displays to dot matrix
     // snprintf(buffer, sizeof(buffer), "Iqbal Muchlis 5024201073 -> %d.%d.%d >> %d %s %d >> %d C", hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)), displayCelcius);
-    // // snprintf(buffer, sizeof(buffer), "%d C", celcius);
-    float voltage = analogRead(LM_35) * (5.0 / 1023.0);
-    float celcius = (voltage - 0.5) * 100.0;
-    Serial << celcius << F(" C");
+    Serial << lm35.getTemp(CELCIUS);
+    int celciusTemp = lm35.getTemp(CELCIUS);
+    snprintf(buffer, sizeof(buffer), "Iqbal Muchlis 5024201073 -> %d C >> %d.%d.%d >> %d %s %d", celciusTemp, hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)));
+    // snprintf(buffer, sizeof(buffer), "%d C", celciusTemp);
 
-    snprintf(buffer, sizeof(buffer), "Iqbal Muchlis 5024201073 -> %d.%d.%d >> %d %s %d >> %0.2f C", hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)), celcius);
+    // float voltage = analogRead(LM_35) * (5.0 / 1023.0);
+    // float celcius = (voltage - 0.5) * 100.0;
+    // Serial << celcius << F(" C");
+
+    // snprintf(buffer, sizeof(buffer), "Iqbal Muchlis 5024201073 -> %d.%d.%d >> %d %s %d >> %0.2f C", hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)), celcius);
 
 
 
