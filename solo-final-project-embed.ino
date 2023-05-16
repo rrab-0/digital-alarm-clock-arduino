@@ -117,7 +117,7 @@ void loop() {
 
 
 
-    // THIS FLOAT BELOW IS EATING TOO MUCH MEMORY DONT DO IT
+    // THIS FLOAT BELOW IS EATING TOO MUCH MEMORY DONT USE IT
 
     // (this was once a frightening float) uint8_t c = myRTC.temperature() / 4.;
     // (this was once a frightening float) uint8_t f = c * 9. / 5. + 32.;
