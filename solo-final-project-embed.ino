@@ -1,12 +1,3 @@
-// TODO:
-// - check if temp is accurate or not
-// - make alarm
-// - implement light sensor to check brightness
-// - if can fix high memory usage
-//  - problem is at library itself "MD_Parola P = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);" causes like 70% memory usage
-// //- display clock, calendar properly
-// //- make text scroll
-
 // dot matrix
 #include <MD_Parola.h>   // https://github.com/MajicDesigns/MD_Parola
 #include <MD_MAX72xx.h>  // https://github.com/MajicDesigns/MD_MAX72XX)
@@ -359,9 +350,6 @@ void loop() {
       Serial << F("RTC set to: ");
       printDateTime(t);
 
-      // sprintf(buffer, "%d %s %d %d:%d:%d", day(t), monthShortStr(month(t)), _DEC(year(t)), hour(t), minute(t), second(t));
-      // P.displayText(buffer, PA_CENTER, 25, 25, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
-      // P.displayReset();
 
 
       Serial << endl;
@@ -372,7 +360,6 @@ void loop() {
 
   t = now();
 
-  // sprintf(buffer, "%d.%d.%d > %d %s %d", hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)));
   if (t != tLast) {
     tLast = t;
 
@@ -398,20 +385,9 @@ void loop() {
     // prints calendar and clock
     printDateTime(t);
 
-    // // prints celcius
-    // uint8_t c = myRTC.temperature() / 4.;
-    // Serial << c << F(" C  ");
-
-    // from LM35 (celcius)
-    // int celcius = analogRead(LM_35);
-    // int displayCelcius = celcius * (5.0/1023.0) * 100;
-    // Serial << displayCelcius << F(" C");
-    // displays to dot matrix
-    // snprintf(buffer, sizeof(buffer), "Iqbal Muchlis 5024201073 -> %d.%d.%d >> %d %s %d >> %d C", hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)), displayCelcius);
     Serial << "LM35: " << lm35.getTemp(CELCIUS) << " "
            << "RTC: " << myRTC.temperature() / 4.0 << " LDR:" << analogRead(LIGHT_SENSOR);
     int celciusTemp = lm35.getTemp(CELCIUS);
-    // snprintf(buffer, sizeof(buffer), "Iqbal Muchlis 5024201073 -> %d C >> %d.%d.%d >> %d %s %d", celciusTemp, hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)));
 
     if (second(t) == 10 || second(t) == 11 || second(t) == 12 || second(t) == 13 || second(t) == 40 || second(t) == 41 || second(t) == 42 || second(t) == 43) {
       digitalWrite(BUZZER, HIGH);
@@ -427,7 +403,6 @@ void loop() {
       digitalWrite(BUZZER, LOW);
       snprintf(buffer, sizeof(buffer), "%d.%d.%d", hour(t), minute(t), second(t));
     }
-
 
     // for blinking dots
     // else if (second(t) % 2 == 0) {
@@ -449,29 +424,10 @@ void loop() {
     //   snprintf(buffer, sizeof(buffer), "%d.%d.%d", hour(t), minute(t), second(t));
     // }
 
-    
-    // snprintf(buffer, sizeof(buffer), "%d C", celciusTemp);
-
-    // float voltage = analogRead(LM_35) * (5.0 / 1023.0);
-    // float celcius = (voltage - 0.5) * 100.0;
-    // Serial << celcius << F(" C");
-
-    // snprintf(buffer, sizeof(buffer), "Iqbal Muchlis 5024201073 -> %d.%d.%d >> %d %s %d >> %0.2f C", hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)), celcius);
-
-
-
-    // THIS FLOAT BELOW IS EATING TOO MUCH MEMORY DONT USE IT
-
-    // (this was once a frightening float) uint8_t c = myRTC.temperature() / 4.;
-    // (this was once a frightening float) uint8_t f = c * 9. / 5. + 32.;
-    // Serial << F("  ") << c << F(" C  ") << f << F(" F");
-
-
     Serial << endl;
   }
-  // sprintf(buffer, "%d %s %d %d:%d:%d", day(t), monthShortStr(month(t)), _DEC(year(t)), hour(t), minute(t), second(t));
+
   if (P.displayAnimate()) {
-    // P.displayText(buffer, PA_CENTER, 60, 60, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
     if ((second(t) == 10 || second(t) == 11 || second(t) == 12 || second(t) == 13 || second(t) == 40 || second(t) == 41 || second(t) == 42 || second(t) == 43) || (second(t) == 14 || second(t) == 15 || second(t) == 16 || second(t) == 17 || second(t) == 44 || second(t) == 45 || second(t) == 46 || second(t) == 47)) {
       P.displayText(buffer, PA_RIGHT, 60, 60, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
     } else {
