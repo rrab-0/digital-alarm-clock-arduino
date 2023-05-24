@@ -27,12 +27,17 @@ DS3232RTC myRTC;
 LM35 lm35(A0);
 // light sensor
 #define LIGHT_SENSOR A1
+// buzzer
+#define BUZZER 8
+// keyboard
+#define CLOCK 6
+#define DATA 7
 
 // for snprintf
 char buffer[60];
 
 // font
-MD_MAX72XX::fontType_t newFont_2[] PROGMEM = {
+MD_MAX72XX::fontType_t newFont[] PROGMEM = {
   0,                            // 0
   0,                            // 1
   0,                            // 2
@@ -65,7 +70,7 @@ MD_MAX72XX::fontType_t newFont_2[] PROGMEM = {
   0,                            // 29
   0,                            // 30
   0,                            // 31
-  0,                            // 32
+  1, 0,                         // 32       - space
   0,                            // 33
   0,                            // 34
   0,                            // 35
@@ -81,17 +86,17 @@ MD_MAX72XX::fontType_t newFont_2[] PROGMEM = {
   0,                            // 45
   1, 32,                        // 46
   0,                            // 47
-  4, 56, 68, 68, 56,            // 48      - 0
-  2, 8, 124,                    // 49       - 1
-  4, 72, 100, 84, 72,           // 50       - 2
-  3, 84, 84, 124,               // 51      - 3
-  3, 16, 24, 124,               // 52       - 4
-  3, 92, 84, 116,               // 53      - 5
-  3, 124, 84, 116,              // 54      - 6
-  3, 4, 4, 124,                 // 55       - 7
-  3, 124, 84, 124,              // 56      - 8
-  3, 92, 84, 124,               // 57      - 9
-  1, 36,                        // 58       - :
+  4, 56, 68, 68, 56,            // 48       - 0
+  2, 8, 124,                    // 49        - 1
+  4, 72, 100, 84, 72,           // 50        - 2
+  3, 84, 84, 124,               // 51       - 3
+  3, 16, 24, 124,               // 52        - 4
+  3, 92, 84, 116,               // 53       - 5
+  3, 124, 84, 116,              // 54       - 6
+  3, 4, 4, 124,                 // 55        - 7
+  3, 124, 84, 124,              // 56       - 8
+  3, 92, 84, 124,               // 57       - 9
+  1, 36,                        // 58        - :
   2, 64, 36,                    // 59
   0,                            // 60
   0,                            // 61
@@ -293,9 +298,12 @@ MD_MAX72XX::fontType_t newFont_2[] PROGMEM = {
 
 void setup() {
   Serial.begin(9600);
+  pinMode(CLOCK, INPUT);
+  pinMode(DATA, INPUT);
+  pinMode(BUZZER, OUTPUT);
   myRTC.begin();
   P.begin();
-  P.setFont(newFont_2);
+  P.setFont(newFont);
 
   // setSyncProvider() causes the Time library to synchronize with the
   // external RTC by calling RTC.get() every five minutes by default.
@@ -308,6 +316,18 @@ void setup() {
 }
 
 void loop() {
+  // for keyboard
+  uint16_t scanval;
+  for (int i = 0; i < 11; i++) {
+    while (digitalRead(CLOCK))
+      ;
+    scanval |= digitalRead(DATA) << i;
+    while (!digitalRead(DATA))
+      ;
+  }
+  scanval >>= 1;
+  scanval &= 0xFF;
+  // Serial.println(scanval);
 
   // change time_t (uint32_t) to uint16_t if need to free more memory
   static time_t tLast;
@@ -351,28 +371,29 @@ void loop() {
   }
 
   t = now();
+
   // sprintf(buffer, "%d.%d.%d > %d %s %d", hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)));
   if (t != tLast) {
     tLast = t;
 
     P.setIntensity(0);
-    // // changes brightness according to light sensor
-    // if (analogRead(LIGHT_SENSOR) < 100) {
-    //   // terang banget
-    //   P.setIntensity(15);
-    // } else if (analogRead(LIGHT_SENSOR) < 200) {
-    //   // terang
-    //   P.setIntensity(10);
-    // } else if (analogRead(LIGHT_SENSOR) < 500) {
-    //   // normal
-    //   P.setIntensity(5);
-    // } else if (analogRead(LIGHT_SENSOR) < 800) {
-    //   // gelap
-    //   P.setIntensity(3);
-    // } else {
-    //   // gelap banget
-    //   P.setIntensity(0);
-    // }
+    // changes brightness according to light sensor
+    if (analogRead(LIGHT_SENSOR) < 100) {
+      // terang banget
+      P.setIntensity(15);
+    } else if (analogRead(LIGHT_SENSOR) < 200) {
+      // terang
+      P.setIntensity(10);
+    } else if (analogRead(LIGHT_SENSOR) < 500) {
+      // normal
+      P.setIntensity(5);
+    } else if (analogRead(LIGHT_SENSOR) < 800) {
+      // gelap
+      P.setIntensity(3);
+    } else {
+      // gelap banget
+      P.setIntensity(0);
+    }
 
     // prints calendar and clock
     printDateTime(t);
@@ -391,18 +412,44 @@ void loop() {
            << "RTC: " << myRTC.temperature() / 4.0 << " LDR:" << analogRead(LIGHT_SENSOR);
     int celciusTemp = lm35.getTemp(CELCIUS);
     // snprintf(buffer, sizeof(buffer), "Iqbal Muchlis 5024201073 -> %d C >> %d.%d.%d >> %d %s %d", celciusTemp, hour(t), minute(t), second(t), day(t), monthShortStr(month(t)), _DEC(year(t)));
-    if (second(t) == 10 || second(t) == 11 || second(t) == 12 || second(t) == 40 || second(t) == 41 || second(t) == 42) {
+
+    if (second(t) == 10 || second(t) == 11 || second(t) == 12 || second(t) == 13 || second(t) == 40 || second(t) == 41 || second(t) == 42 || second(t) == 43) {
+      digitalWrite(BUZZER, HIGH);
       // displays calendar for 3 seconds
       Serial << " CALENDAR";
-      snprintf(buffer, sizeof(buffer), "%d %s %d", day(t), monthShortStr(month(t)), _DEC(year(t)));
-    } else if (second(t) == 13 || second(t) == 14 || second(t) == 15 || second(t) == 43 || second(t) == 44 || second(t) == 45) {
+      snprintf(buffer, sizeof(buffer), "%d.%s.%d", day(t), monthShortStr(month(t)), _DEC(year(t)));
+    } else if (second(t) == 14 || second(t) == 15 || second(t) == 16 || second(t) == 17 || second(t) == 44 || second(t) == 45 || second(t) == 46 || second(t) == 47) {
+      digitalWrite(BUZZER, HIGH);
       // displays temperature for 3 seconds
       Serial << " TEMP";
       snprintf(buffer, sizeof(buffer), "%d °C", celciusTemp);
     } else {
+      digitalWrite(BUZZER, LOW);
       snprintf(buffer, sizeof(buffer), "%d.%d.%d", hour(t), minute(t), second(t));
     }
 
+
+    // for blinking dots
+    // else if (second(t) % 2 == 0) {
+    //   // if (minute(t) < 10) {
+    //   //   strcat("0", minute(t));
+    //   // }
+    //   // if (second(t) < 10) {
+    //   //   strcat("0", second(t));
+    //   // }
+    //   // if (hour(t) < 10) {
+    //   //   strcat("0", hour(t));
+    //   // }
+    //   // snprintf(buffer, sizeof(buffer), "%d %s %d", day(t), monthShortStr(month(t)), _DEC(year(t)));
+    //   // snprintf(buffer, sizeof(buffer), "%d °C", celciusTemp);
+    //   digitalWrite(BUZZER, LOW);
+    //   snprintf(buffer, sizeof(buffer), "%d %d %d", hour(t), minute(t), second(t));
+    // } else {
+    //   digitalWrite(BUZZER, LOW);
+    //   snprintf(buffer, sizeof(buffer), "%d.%d.%d", hour(t), minute(t), second(t));
+    // }
+
+    
     // snprintf(buffer, sizeof(buffer), "%d C", celciusTemp);
 
     // float voltage = analogRead(LM_35) * (5.0 / 1023.0);
@@ -425,8 +472,8 @@ void loop() {
   // sprintf(buffer, "%d %s %d %d:%d:%d", day(t), monthShortStr(month(t)), _DEC(year(t)), hour(t), minute(t), second(t));
   if (P.displayAnimate()) {
     // P.displayText(buffer, PA_CENTER, 60, 60, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
-    if (second(t) == 10 || second(t) == 11 || second(t) == 12 || second(t) == 40 || second(t) == 41 || second(t) == 42) {
-      P.displayText(buffer, PA_CENTER, 60, 60, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
+    if ((second(t) == 10 || second(t) == 11 || second(t) == 12 || second(t) == 13 || second(t) == 40 || second(t) == 41 || second(t) == 42 || second(t) == 43) || (second(t) == 14 || second(t) == 15 || second(t) == 16 || second(t) == 17 || second(t) == 44 || second(t) == 45 || second(t) == 46 || second(t) == 47)) {
+      P.displayText(buffer, PA_RIGHT, 60, 60, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
     } else {
       P.displayText(buffer, PA_CENTER, 60, 60, PA_NO_EFFECT, PA_NO_EFFECT);
     }
