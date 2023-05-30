@@ -19,10 +19,12 @@ LM35 lm35(A0);
 // light sensor
 #define LIGHT_SENSOR A1
 // buzzer
-#define BUZZER 8
+#define BUZZER A2
 // keyboard
-#define CLOCK 6
-#define DATA 7
+#include <PS2Keyboard.h>
+#define DATAPIN 4
+#define IRQPIN 2
+PS2Keyboard keyboard;
 
 // for snprintf
 char buffer[60];
@@ -287,22 +289,21 @@ MD_MAX72XX::fontType_t newFont[] PROGMEM = {
   0,                            // 255
 };
 
-void alarmCheck(char alarmNumber, char c) {
-  if (alarmNumber == "1") {
-    return snprintf(buffer, sizeof(buffer), "5024201073");
-  } else if (alarmNumber == "2") {
-    return snprintf(buffer, sizeof(buffer), "5024201073 Iqbal Muchlis");
-  } else if (alarmNumber == "3") {
-    return snprintf(buffer, sizeof(buffer), "%d", c);
-  } else {
-    return snprintf(buffer, sizeof(buffer), "invalid alarm format!");
-  }
-}
+// void alarmCheck(char alarmNumber, char c) {
+//   if (alarmNumber == "1") {
+//     return snprintf(buffer, sizeof(buffer), "5024201073");
+//   } else if (alarmNumber == "2") {
+//     return snprintf(buffer, sizeof(buffer), "5024201073 Iqbal Muchlis");
+//   } else if (alarmNumber == "3") {
+//     return snprintf(buffer, sizeof(buffer), "%d", c);
+//   } else {
+//     return snprintf(buffer, sizeof(buffer), "invalid alarm format!");
+//   }
+// }
 
 void setup() {
   Serial.begin(9600);
-  pinMode(CLOCK, INPUT);
-  pinMode(DATA, INPUT);
+  keyboard.begin(DATAPIN, IRQPIN);
   pinMode(BUZZER, OUTPUT);
   myRTC.begin();
   P.begin();
@@ -311,10 +312,10 @@ void setup() {
   // setSyncProvider() causes the Time library to synchronize with the
   // external RTC by calling RTC.get() every five minutes by default.
   setSyncProvider(myRTC.get);
-  Serial << F("RTC Sync");
-  if (timeStatus() != timeSet)
-    Serial << F(" FAIL!");
-  Serial << endl;
+  // Serial << F("RTC Sync");
+  // if (timeStatus() != timeSet)
+  //   Serial << F(" FAIL!");
+  // Serial << endl;
 
   P.displayClear();
 }
@@ -324,6 +325,36 @@ void loop() {
   static time_t tLast;
   time_t t;
   tmElements_t tm;
+
+  // keyboard input
+  if (keyboard.available()) {
+    char c = keyboard.read();
+    // check for some of the special keys
+    if (c == PS2_ENTER) {
+      Serial.println();
+    } else if (c == PS2_TAB) {
+      Serial.print("Tab");
+    } else if (c == PS2_ESC) {
+      Serial.print("ESC");
+    } else if (c == PS2_PAGEDOWN) {
+      Serial.print("PgDn");
+    } else if (c == PS2_PAGEUP) {
+      Serial.print("PgUp");
+    } else if (c == PS2_LEFTARROW) {
+      Serial.print("Left");
+    } else if (c == PS2_RIGHTARROW) {
+      Serial.print("Right");
+    } else if (c == PS2_UPARROW) {
+      Serial.print("Up");
+    } else if (c == PS2_DOWNARROW) {
+      Serial.print("Down");
+    } else if (c == PS2_DELETE) {
+      Serial.print("Del");
+    } else {
+      // otherwise, just print all normal characters
+      Serial.print(c);
+    }
+  }
 
   // check for input to set the RTC, minimum length is 12, i.e. yy,m,d,h,m,s
   if (Serial.available() >= 12) {
@@ -348,7 +379,7 @@ void loop() {
       myRTC.set(t);  // use the time_t value to ensure correct weekday is set
       setTime(t);
       Serial << F("RTC set to: ");
-      printDateTime(t);
+      // printDateTime(t);
 
       Serial << endl;
       // dump any extraneous input
@@ -362,31 +393,33 @@ void loop() {
   if (t != tLast) {
     tLast = t;
 
-    P.setIntensity(0);
+    // P.setIntensity(0);
     // changes brightness according to light sensor
-    // if (analogRead(LIGHT_SENSOR) < 100) {
-    //   // terang banget
-    //   P.setIntensity(15);
-    // } else if (analogRead(LIGHT_SENSOR) < 200) {
-    //   // terang
-    //   P.setIntensity(10);
-    // } else if (analogRead(LIGHT_SENSOR) < 500) {
-    //   // normal
-    //   P.setIntensity(5);
-    // } else if (analogRead(LIGHT_SENSOR) < 800) {
-    //   // gelap
-    //   P.setIntensity(3);
-    // } else {
-    //   // gelap banget
-    //   P.setIntensity(0);
-    // }
+    if (analogRead(LIGHT_SENSOR) < 100) {
+      // terang banget
+      P.setIntensity(10);
+    } else if (analogRead(LIGHT_SENSOR) < 200) {
+      // terang
+      P.setIntensity(8);
+    } else if (analogRead(LIGHT_SENSOR) < 500) {
+      // normal
+      P.setIntensity(5);
+    } else if (analogRead(LIGHT_SENSOR) < 800) {
+      // gelap
+      P.setIntensity(3);
+    } else {
+      // gelap banget
+      P.setIntensity(0);
+    }
 
-    // prints calendar and clock
-    printDateTime(t);
-    // prints LM35, RTC Temp, and LDR, current display on dot matrix
-    Serial << "LM35: " << lm35.getTemp(CELCIUS) << " "
-           << "RTC: " << myRTC.temperature() / 4.0 << " LDR:" << analogRead(LIGHT_SENSOR) << " " << buffer;
-    int celciusTemp = lm35.getTemp(CELCIUS);
+    // // prints calendar and clock
+    // printDateTime(t);
+    // // prints LM35, RTC Temp, and LDR, current display on dot matrix
+    // Serial << "LM35: " << lm35.getTemp(CELCIUS) << " "
+    //        << "RTC: " << myRTC.temperature() / 4.0 << " LDR:" << analogRead(LIGHT_SENSOR) << " " << buffer;
+    uint16_t celciusTemp = lm35.getTemp(CELCIUS);
+
+    
 
     // // alarm
     // bool inputMode = false;
@@ -421,17 +454,17 @@ void loop() {
     //   }
     // }
 
-    // check
-    bool checkFirstAlarm = false;
-    if (second(t) >= 3 && second(t) <= 5) {
-      checkFirstAlarm = true;
-    } else {
-      checkFirstAlarm = false;
-    }
-    // test
-    if (checkFirstAlarm == true) {
-      snprintf(buffer, sizeof(buffer), "5024201073");
-    } else if (second(t) == 9 || second(t) == 39 || second(t) == 14 || second(t) == 44) {
+    // // check
+    // bool checkFirstAlarm = false;
+    // if (second(t) >= 3 && second(t) <= 5) {
+    //   checkFirstAlarm = true;
+    // } else {
+    //   checkFirstAlarm = false;
+    // }
+    // // test
+    // if (checkFirstAlarm == true) {
+    //   snprintf(buffer, sizeof(buffer), "5024201073");
+    if (second(t) == 9 || second(t) == 39 || second(t) == 14 || second(t) == 44) {
       snprintf(buffer, sizeof(buffer), " ");
     } else if ((second(t) >= 10 && second(t) <= 13) || (second(t) >= 40 && second(t) <= 43)) {
       // displays calendar for 3 seconds
@@ -474,7 +507,7 @@ void loop() {
 
   if (P.displayAnimate()) {
     if (second(t) == 9 || second(t) == 39 || second(t) == 14 || second(t) == 44) {
-      P.displayText(buffer, PA_CENTER, 60, 60, PA_OPENING, PA_OPENING);
+      P.displayText(buffer, PA_CENTER, 60, 60, PA_NO_EFFECT, PA_NO_EFFECT);
     } else if (((second(t) >= 10 && second(t) <= 13) || (second(t) >= 40 && second(t) <= 43)) || ((second(t) >= 14 && second(t) <= 16) || (second(t) >= 44 && second(t) <= 45))) {
 
       P.displayText(buffer, PA_RIGHT, 60, 60, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
@@ -485,36 +518,36 @@ void loop() {
   }
 }
 
-// print date and time to Serial
-void printDateTime(time_t t) {
-  printDate(t);
-  Serial << ' ';
-  printTime(t);
-  // yy,mm,dd,hh,mm,ss
-  // 23,05,09,16,53,10
-}
+// // print date and time to Serial
+// void printDateTime(time_t t) {
+//   printDate(t);
+//   Serial << ' ';
+//   printTime(t);
+//   // yy,mm,dd,hh,mm,ss
+//   // 23,05,09,16,53,10
+// }
 
-// print time to Serial
-void printTime(time_t t) {
-  printI00(hour(t), ':');
-  printI00(minute(t), ':');
-  printI00(second(t), ' ');
-}
+// // print time to Serial
+// void printTime(time_t t) {
+//   printI00(hour(t), ':');
+//   printI00(minute(t), ':');
+//   printI00(second(t), ' ');
+// }
 
-// print date to Serial
-void printDate(time_t t) {
-  printI00(day(t), 0);
-  Serial << "-" << monthShortStr(month(t)) << "-" << _DEC(year(t));
-}
+// // print date to Serial
+// void printDate(time_t t) {
+//   printI00(day(t), 0);
+//   Serial << "-" << monthShortStr(month(t)) << "-" << _DEC(year(t));
+// }
 
-// Print to serial an integer in "00" format (with leading zero),
-// followed by a delimiter character.
-// Input value assumed to be between 0 and 99.
-void printI00(int val, char delim) {
-  if (val < 10)
-    Serial << '0';
-  Serial << _DEC(val);
-  if (delim > 0)
-    Serial << delim;
-  return;
-}
+// // Print to serial an integer in "00" format (with leading zero),
+// // followed by a delimiter character.
+// // Input value assumed to be between 0 and 99.
+// void printI00(int val, char delim) {
+//   if (val < 10)
+//     Serial << '0';
+//   Serial << _DEC(val);
+//   if (delim > 0)
+//     Serial << delim;
+//   return;
+// }
