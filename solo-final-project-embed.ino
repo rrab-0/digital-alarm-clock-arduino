@@ -28,6 +28,8 @@ PS2Keyboard keyboard;
 
 // for snprintf
 char buffer[60];
+// const char *wow[20];
+// char hello = "a";
 
 // font
 MD_MAX72XX::fontType_t newFont[] PROGMEM = {
@@ -301,7 +303,7 @@ MD_MAX72XX::fontType_t newFont[] PROGMEM = {
 //   }
 // }
 
-// char c = keyboard.read();
+char c = keyboard.read();
 
 void setup() {
   Serial.begin(9600);
@@ -455,39 +457,44 @@ void loop() {
     //     }
     //   }
     // }
+    bool checkClockMode = false;
+    bool checkInputMode = false;
 
-    // char c = keyboard.read();
 
-    // // check
-    // bool checkFirstAlarm = false;
-    // if (second(t) >= 3 && second(t) <= 5) {
-    //   checkFirstAlarm = true;
-    // } else {
-    //   checkFirstAlarm = false;
-    // }
-    // // test
-    // if (checkFirstAlarm == true) {
-    //   snprintf(buffer, sizeof(buffer), "5024201073");
+    char c = keyboard.read();
+    if (c == 105) {  // 105 = 'i'
+      checkInputMode = true;
+      checkClockMode = false;
+    }
+    if (c == 106) {  // 106 = 'j'
+      checkInputMode = false;
+      checkClockMode = true;
+    }
 
-    // if (second(t) == 9 || second(t) == 39 || second(t) == 14 || second(t) == 44) {
-    //   snprintf(buffer, sizeof(buffer), " ");
-    // } else if ((second(t) >= 10 && second(t) <= 13) || (second(t) >= 40 && second(t) <= 43)) {
-    //   // displays calendar for 3 seconds
-    //   digitalWrite(BUZZER, LOW);
-    //   snprintf(buffer, sizeof(buffer), "%d.%s.%d", day(t), monthShortStr(month(t)), _DEC(year(t)));
-    //   Serial << " CALENDAR";
-    // } else if ((second(t) >= 14 && second(t) <= 17) || (second(t) >= 44 && second(t) <= 46)) {
-    //   // displays temperature for 3 seconds
-    //   digitalWrite(BUZZER, LOW);
-    //   snprintf(buffer, sizeof(buffer), "%d °C", celciusTemp);
-    //   Serial << " TEMP";
-    // } else {
-    //   // displays clock as a default
-    //   // char c = keyboard.read();
-    //   digitalWrite(BUZZER, LOW);
-    //   // snprintf(buffer, sizeof(buffer), "%d.%d.%d", hour(t), minute(t), second(t));
-    //   snprintf(buffer, sizeof(buffer), "%c", c);
-    // }
+    if (checkInputMode == true && checkClockMode == false) {
+      snprintf(buffer, sizeof(buffer), "123");
+    } else if (checkClockMode == true && checkInputMode == false) {
+      if (second(t) == 9 || second(t) == 39 || second(t) == 14 || second(t) == 44) {
+        snprintf(buffer, sizeof(buffer), " ");
+      } else if ((second(t) >= 10 && second(t) <= 13) || (second(t) >= 40 && second(t) <= 43)) {
+        // displays calendar for 3 seconds
+        digitalWrite(BUZZER, LOW);
+        snprintf(buffer, sizeof(buffer), "%d.%s.%d", day(t), monthShortStr(month(t)), _DEC(year(t)));
+        Serial << " CALENDAR";
+      } else if ((second(t) >= 14 && second(t) <= 17) || (second(t) >= 44 && second(t) <= 46)) {
+        // displays temperature for 3 seconds
+        digitalWrite(BUZZER, LOW);
+        snprintf(buffer, sizeof(buffer), "%d °C", celciusTemp);
+        Serial << " TEMP";
+      } else {
+        // displays clock as a default
+        digitalWrite(BUZZER, LOW);
+        snprintf(buffer, sizeof(buffer), "%d.%d.%d", hour(t), minute(t), second(t));
+      }
+    }
+
+
+
 
     // for blinking dots
     // else if (second(t) % 2 == 0) {
@@ -512,57 +519,50 @@ void loop() {
     Serial << endl;
   }
 
-  // if (P.displayAnimate()) {
-  //   if (second(t) == 9 || second(t) == 39 || second(t) == 14 || second(t) == 44) {
-  //     P.displayText(buffer, PA_CENTER, 60, 60, PA_NO_EFFECT, PA_NO_EFFECT);
-  //   } else if (((second(t) >= 10 && second(t) <= 13) || (second(t) >= 40 && second(t) <= 43)) || ((second(t) >= 14 && second(t) <= 16) || (second(t) >= 44 && second(t) <= 45))) {
+  if (P.displayAnimate()) {
+    if (second(t) == 9 || second(t) == 39 || second(t) == 14 || second(t) == 44) {
+      // dont change PA_OPENING, it fixes weird calendar + temp scrolling
+      P.displayText(buffer, PA_CENTER, 60, 60, PA_OPENING, PA_OPENING);
+    } else if (((second(t) >= 10 && second(t) <= 13) || (second(t) >= 40 && second(t) <= 43)) || ((second(t) >= 14 && second(t) <= 16) || (second(t) >= 44 && second(t) <= 45))) {
 
-  //     P.displayText(buffer, PA_RIGHT, 60, 60, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
-  //   } else {
-  //     P.displayText(buffer, PA_CENTER, 60, 60, PA_NO_EFFECT, PA_NO_EFFECT);
-  //   }
-  //   P.displayReset();
-  // }
-  if (keyboard.available()) {
-    char c = keyboard.read();
-    snprintf(buffer, sizeof(buffer), "May %c", c);
-    if (P.displayAnimate()) {
+      P.displayText(buffer, PA_RIGHT, 60, 60, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
+    } else {
       P.displayText(buffer, PA_CENTER, 60, 60, PA_NO_EFFECT, PA_NO_EFFECT);
-      P.displayReset();
     }
+    P.displayReset();
   }
 }
 
-// // print date and time to Serial
-// void printDateTime(time_t t) {
-//   printDate(t);
-//   Serial << ' ';
-//   printTime(t);
-//   // yy,mm,dd,hh,mm,ss
-//   // 23,05,09,16,53,10
-// }
+// print date and time to Serial
+void printDateTime(time_t t) {
+  printDate(t);
+  Serial << ' ';
+  printTime(t);
+  // yy,mm,dd,hh,mm,ss
+  // 23,05,09,16,53,10
+}
 
-// // print time to Serial
-// void printTime(time_t t) {
-//   printI00(hour(t), ':');
-//   printI00(minute(t), ':');
-//   printI00(second(t), ' ');
-// }
+// print time to Serial
+void printTime(time_t t) {
+  printI00(hour(t), ':');
+  printI00(minute(t), ':');
+  printI00(second(t), ' ');
+}
 
-// // print date to Serial
-// void printDate(time_t t) {
-//   printI00(day(t), 0);
-//   Serial << "-" << monthShortStr(month(t)) << "-" << _DEC(year(t));
-// }
+// print date to Serial
+void printDate(time_t t) {
+  printI00(day(t), 0);
+  Serial << "-" << monthShortStr(month(t)) << "-" << _DEC(year(t));
+}
 
-// // Print to serial an integer in "00" format (with leading zero),
-// // followed by a delimiter character.
-// // Input value assumed to be between 0 and 99.
-// void printI00(int val, char delim) {
-//   if (val < 10)
-//     Serial << '0';
-//   Serial << _DEC(val);
-//   if (delim > 0)
-//     Serial << delim;
-//   return;
-// }
+// Print to serial an integer in "00" format (with leading zero),
+// followed by a delimiter character.
+// Input value assumed to be between 0 and 99.
+void printI00(int val, char delim) {
+  if (val < 10)
+    Serial << '0';
+  Serial << _DEC(val);
+  if (delim > 0)
+    Serial << delim;
+  return;
+}
