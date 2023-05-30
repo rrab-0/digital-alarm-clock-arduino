@@ -28,8 +28,7 @@ PS2Keyboard keyboard;
 
 // for snprintf
 char buffer[60];
-// const char *wow[20];
-// char hello = "a";
+
 
 // font
 MD_MAX72XX::fontType_t newFont[] PROGMEM = {
@@ -291,27 +290,25 @@ MD_MAX72XX::fontType_t newFont[] PROGMEM = {
   0,                            // 255
 };
 
-// void alarmCheck(char alarmNumber, char c) {
-//   if (alarmNumber == "1") {
-//     return snprintf(buffer, sizeof(buffer), "5024201073");
-//   } else if (alarmNumber == "2") {
-//     return snprintf(buffer, sizeof(buffer), "5024201073 Iqbal Muchlis");
-//   } else if (alarmNumber == "3") {
-//     return snprintf(buffer, sizeof(buffer), "%d", c);
-//   } else {
-//     return snprintf(buffer, sizeof(buffer), "invalid alarm format!");
-//   }
-// }
-
 char c = keyboard.read();
+
+unsigned long startTime;
+const unsigned long duration = 5000;
+
 
 void setup() {
   Serial.begin(9600);
+  startTime = millis();
   keyboard.begin(DATAPIN, IRQPIN);
   pinMode(BUZZER, OUTPUT);
   myRTC.begin();
   P.begin();
   P.setFont(newFont);
+
+  // set Alarm 1 to occur at 5 seconds after every minute
+  myRTC.setAlarm(DS3232RTC::ALM1_MATCH_SECONDS, 3, 0, 0, 1);
+  // clear the alarm flag
+  myRTC.alarm(DS3232RTC::ALARM_1);
 
   // setSyncProvider() causes the Time library to synchronize with the
   // external RTC by calling RTC.get() every five minutes by default.
@@ -325,6 +322,11 @@ void setup() {
 }
 
 void loop() {
+  // unsigned long currentTime = millis();
+  // unsigned long elapsedTime = currentTime - startTime;
+  // myRTC.setAlarm(DS3232RTC::ALM1_MATCH_SECONDS, 20, 0, 1, dowWednesday);
+
+
   // change time_t (uint32_t) to uint16_t if need to free more memory
   static time_t tLast;
   time_t t;
@@ -457,42 +459,87 @@ void loop() {
     //     }
     //   }
     // }
-    bool checkClockMode = false;
-    bool checkInputMode = false;
 
+    // bool checkClockMode = false;
+    // bool checkInputMode = false;
+    // char c = keyboard.read();
+    // if (c == 105) {  // 105 = 'i'
+    //   checkInputMode = true;
+    //   checkClockMode = false;
+    // }
+    // if (c == 106) {  // 106 = 'j'
+    //   checkInputMode = false;
+    //   checkClockMode = true;
+    // }
 
-    char c = keyboard.read();
-    if (c == 105) {  // 105 = 'i'
-      checkInputMode = true;
-      checkClockMode = false;
-    }
-    if (c == 106) {  // 106 = 'j'
-      checkInputMode = false;
-      checkClockMode = true;
-    }
+    // if (checkInputMode == true && checkClockMode == false) {
+    //   snprintf(buffer, sizeof(buffer), "123");
+    // } else if (checkClockMode == true && checkInputMode == false) {
+    //   if (second(t) == 9 || second(t) == 39 || second(t) == 14 || second(t) == 44) {
+    //     snprintf(buffer, sizeof(buffer), " ");
+    //   } else if ((second(t) >= 10 && second(t) <= 13) || (second(t) >= 40 && second(t) <= 43)) {
+    //     // displays calendar for 3 seconds
+    //     digitalWrite(BUZZER, LOW);
+    //     snprintf(buffer, sizeof(buffer), "%d.%s.%d", day(t), monthShortStr(month(t)), _DEC(year(t)));
+    //     Serial << " CALENDAR";
+    //   } else if ((second(t) >= 14 && second(t) <= 17) || (second(t) >= 44 && second(t) <= 46)) {
+    //     // displays temperature for 3 seconds
+    //     digitalWrite(BUZZER, LOW);
+    //     snprintf(buffer, sizeof(buffer), "%d °C", celciusTemp);
+    //     Serial << " TEMP";
+    //   } else {
+    //     // displays clock as a default
+    //     digitalWrite(BUZZER, LOW);
+    //     snprintf(buffer, sizeof(buffer), "%d.%d.%d", hour(t), minute(t), second(t));
+    //   }
+    // }
+    bool alarmFired = false;
 
-    if (checkInputMode == true && checkClockMode == false) {
-      snprintf(buffer, sizeof(buffer), "123");
-    } else if (checkClockMode == true && checkInputMode == false) {
-      if (second(t) == 9 || second(t) == 39 || second(t) == 14 || second(t) == 44) {
-        snprintf(buffer, sizeof(buffer), " ");
-      } else if ((second(t) >= 10 && second(t) <= 13) || (second(t) >= 40 && second(t) <= 43)) {
-        // displays calendar for 3 seconds
-        digitalWrite(BUZZER, LOW);
-        snprintf(buffer, sizeof(buffer), "%d.%s.%d", day(t), monthShortStr(month(t)), _DEC(year(t)));
-        Serial << " CALENDAR";
-      } else if ((second(t) >= 14 && second(t) <= 17) || (second(t) >= 44 && second(t) <= 46)) {
-        // displays temperature for 3 seconds
-        digitalWrite(BUZZER, LOW);
-        snprintf(buffer, sizeof(buffer), "%d °C", celciusTemp);
-        Serial << " TEMP";
-      } else {
-        // displays clock as a default
-        digitalWrite(BUZZER, LOW);
-        snprintf(buffer, sizeof(buffer), "%d.%d.%d", hour(t), minute(t), second(t));
+    // if (myRTC.checkAlarm(DS3232RTC::ALARM_1)) {  // has Alarm1 triggered?
+    //   // yes, act on the alarm
+    //   // alarmFired = true;
+    //   Serial << buffer << " ALARM";
+    //   snprintf(buffer, sizeof(buffer), "5024201073");
+    //   // myRTC.clearAlarm(DS3232RTC::ALARM_1);
+    // }
+
+    // if (alarmFired == true) {
+    //   // unsigned long currentTime = millis();
+    //   // unsigned long elapsedTime = currentTime - startTime;
+    //   // if (elapsedTime < duration) {
+    //   //   snprintf(buffer, sizeof(buffer), "5024201073");
+    //   // } else {
+    //   //   Serial.println("Finished printing for 5 seconds.");
+    //   //   alarmFired = false;
+    //   // }
+    //   snprintf(buffer, sizeof(buffer), "5024201073");
+    // }
+    if (myRTC.checkAlarm(DS3232RTC::ALARM_1)) {  // has Alarm1 triggered?
+      // yes, act on the alarm
+      // alarmFired = true;
+      Serial << buffer << " ALARM";
+      snprintf(buffer, sizeof(buffer), "5024201073");
+      if (second(t) == 7) {
+        myRTC.clearAlarm(DS3232RTC::ALARM_1);
       }
+    } else if (second(t) == 9 || second(t) == 39 || second(t) == 14 || second(t) == 44) {
+      // myRTC.clearAlarm(DS3232RTC::ALARM_1);
+      snprintf(buffer, sizeof(buffer), " ");
+    } else if ((second(t) >= 10 && second(t) <= 13) || (second(t) >= 40 && second(t) <= 43)) {
+      // displays calendar for 3 seconds
+      digitalWrite(BUZZER, LOW);
+      snprintf(buffer, sizeof(buffer), "%d.%s.%d", day(t), monthShortStr(month(t)), _DEC(year(t)));
+      Serial << " CALENDAR";
+    } else if ((second(t) >= 14 && second(t) <= 17) || (second(t) >= 44 && second(t) <= 46)) {
+      // displays temperature for 3 seconds
+      digitalWrite(BUZZER, LOW);
+      snprintf(buffer, sizeof(buffer), "%d °C", celciusTemp);
+      Serial << " TEMP";
+    } else {
+      // displays clock as a default
+      digitalWrite(BUZZER, LOW);
+      snprintf(buffer, sizeof(buffer), "%d.%d.%d", hour(t), minute(t), second(t));
     }
-
 
 
 
@@ -520,11 +567,13 @@ void loop() {
   }
 
   if (P.displayAnimate()) {
+    if (buffer == "5024201073") {
+      P.displayText(buffer, PA_RIGHT, 60, 60, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
+    }
     if (second(t) == 9 || second(t) == 39 || second(t) == 14 || second(t) == 44) {
       // dont change PA_OPENING, it fixes weird calendar + temp scrolling
       P.displayText(buffer, PA_CENTER, 60, 60, PA_OPENING, PA_OPENING);
     } else if (((second(t) >= 10 && second(t) <= 13) || (second(t) >= 40 && second(t) <= 43)) || ((second(t) >= 14 && second(t) <= 16) || (second(t) >= 44 && second(t) <= 45))) {
-
       P.displayText(buffer, PA_RIGHT, 60, 60, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
     } else {
       P.displayText(buffer, PA_CENTER, 60, 60, PA_NO_EFFECT, PA_NO_EFFECT);
@@ -533,36 +582,36 @@ void loop() {
   }
 }
 
-// print date and time to Serial
-void printDateTime(time_t t) {
-  printDate(t);
-  Serial << ' ';
-  printTime(t);
-  // yy,mm,dd,hh,mm,ss
-  // 23,05,09,16,53,10
-}
+// // print date and time to Serial
+// void printDateTime(time_t t) {
+//   printDate(t);
+//   Serial << ' ';
+//   printTime(t);
+//   // yy,mm,dd,hh,mm,ss
+//   // 23,05,09,16,53,10
+// }
 
-// print time to Serial
-void printTime(time_t t) {
-  printI00(hour(t), ':');
-  printI00(minute(t), ':');
-  printI00(second(t), ' ');
-}
+// // print time to Serial
+// void printTime(time_t t) {
+//   printI00(hour(t), ':');
+//   printI00(minute(t), ':');
+//   printI00(second(t), ' ');
+// }
 
-// print date to Serial
-void printDate(time_t t) {
-  printI00(day(t), 0);
-  Serial << "-" << monthShortStr(month(t)) << "-" << _DEC(year(t));
-}
+// // print date to Serial
+// void printDate(time_t t) {
+//   printI00(day(t), 0);
+//   Serial << "-" << monthShortStr(month(t)) << "-" << _DEC(year(t));
+// }
 
-// Print to serial an integer in "00" format (with leading zero),
-// followed by a delimiter character.
-// Input value assumed to be between 0 and 99.
-void printI00(int val, char delim) {
-  if (val < 10)
-    Serial << '0';
-  Serial << _DEC(val);
-  if (delim > 0)
-    Serial << delim;
-  return;
-}
+// // Print to serial an integer in "00" format (with leading zero),
+// // followed by a delimiter character.
+// // Input value assumed to be between 0 and 99.
+// void printI00(int val, char delim) {
+//   if (val < 10)
+//     Serial << '0';
+//   Serial << _DEC(val);
+//   if (delim > 0)
+//     Serial << delim;
+//   return;
+// }
