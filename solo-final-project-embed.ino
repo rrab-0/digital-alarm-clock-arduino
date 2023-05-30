@@ -292,21 +292,67 @@ MD_MAX72XX::fontType_t newFont[] PROGMEM = {
 
 char c = keyboard.read();
 
-unsigned long startTime;
-const unsigned long duration = 5000;
+// unsigned long startTime;
+// const unsigned long duration = 5000;
 
+#define PS2_F1 49
+#define PS2_F2 50
+#define PS2_F3 51
+#define PS2_F4 52
+#define PS2_F5 53
+#define PS2_F6 54
 
 void setup() {
   Serial.begin(9600);
-  startTime = millis();
+  // startTime = millis();
   keyboard.begin(DATAPIN, IRQPIN);
   pinMode(BUZZER, OUTPUT);
   myRTC.begin();
   P.begin();
   P.setFont(newFont);
 
-  // set Alarm 1 to occur at 5 seconds after every minute
-  myRTC.setAlarm(DS3232RTC::ALM1_MATCH_SECONDS, 3, 0, 0, 1);
+
+  // Parameters
+
+  //   alarmType: A value from the ALARM_TYPES_t enumeration, above. (ALARM_TYPES_t)
+  //   seconds: The seconds value to set the alarm to. (uint8_t)
+  //   minutes: The minutes value to set the alarm to. (uint8_t)
+  //   hours: The hours value to set the alarm to. (uint8_t)
+  //   dayOrDate: The day of the week or the date of the month. For day of the week, 
+  //   use a value from the Time library timeDayOfWeek_t enumeration, 
+  //   i.e. dowSunday, dowMonday, dowTuesday, dowWednesday, dowThursday, dowFriday, dowSaturday. (uint8_t)
+
+  // Values for Alarm 1
+
+  //   ALM1_EVERY_SECOND -- causes an alarm once per second.
+  //   ALM1_MATCH_SECONDS -- causes an alarm when the seconds match (i.e. once per minute).
+  //   ALM1_MATCH_MINUTES -- causes an alarm when the minutes and seconds match.
+  //   ALM1_MATCH_HOURS -- causes an alarm when the hours and minutes and seconds match.
+  //   ALM1_MATCH_DATE -- causes an alarm when the date of the month and hours and minutes and seconds match.
+  //   ALM1_MATCH_DAY -- causes an alarm when the day of the week and hours and minutes and seconds match.
+
+  // Syntax
+  //   myRTC.setAlarm(alarmType, seconds, minutes, hours, dayOrDate);
+  
+  // // second
+  // myRTC.setAlarm(DS3232RTC::ALM1_EVERY_SECOND, 0, 0, 0, 1);
+  // // seconds
+  // myRTC.setAlarm(DS3232RTC::ALM1_MATCH_SECONDS, 3, 0, 0, 1);
+  // // minutes
+  // myRTC.setAlarm(DS3232RTC::ALM1_MATCH_MINUTES, 5, 30, 0, 1);
+  // // hours
+  // myRTC.setAlarm(DS3232RTC::ALM1_MATCH_HOURS, 3, 3, 3, 1);
+  // // date
+  // myRTC.setAlarm(DS3232RTC::ALM1_MATCH_DATE, 3, 3, 3, 3);
+  // // day
+  // myRTC.setAlarm(DS3232RTC::ALM1_MATCH_DAY, 3, 3, 3, dowWednesday);
+
+
+  // // set alarm by seconds every minute
+  // // set Alarm 1 to occur at 5 seconds after every minute
+  // myRTC.setAlarm(DS3232RTC::ALM1_MATCH_SECONDS, 3, 0, 0, 1);
+
+
   // clear the alarm flag
   myRTC.alarm(DS3232RTC::ALARM_1);
 
@@ -322,9 +368,8 @@ void setup() {
 }
 
 void loop() {
-  // unsigned long currentTime = millis();
-  // unsigned long elapsedTime = currentTime - startTime;
-  // myRTC.setAlarm(DS3232RTC::ALM1_MATCH_SECONDS, 20, 0, 1, dowWednesday);
+
+  myRTC.setAlarm(DS3232RTC::ALM1_EVERY_SECOND, 0, 0, 0, 1);
 
 
   // change time_t (uint32_t) to uint16_t if need to free more memory
@@ -332,35 +377,53 @@ void loop() {
   time_t t;
   tmElements_t tm;
 
-  // // keyboard input
-  // if (keyboard.available()) {
-  //   char c = keyboard.read();
-  //   // check for some of the special keys
-  //   if (c == PS2_ENTER) {
-  //     Serial.println();
-  //   } else if (c == PS2_TAB) {
-  //     Serial.print("Tab");
-  //   } else if (c == PS2_ESC) {
-  //     Serial.print("ESC");
-  //   } else if (c == PS2_PAGEDOWN) {
-  //     Serial.print("PgDn");
-  //   } else if (c == PS2_PAGEUP) {
-  //     Serial.print("PgUp");
-  //   } else if (c == PS2_LEFTARROW) {
-  //     Serial.print("Left");
-  //   } else if (c == PS2_RIGHTARROW) {
-  //     Serial.print("Right");
-  //   } else if (c == PS2_UPARROW) {
-  //     Serial.print("Up");
-  //   } else if (c == PS2_DOWNARROW) {
-  //     Serial.print("Down");
-  //   } else if (c == PS2_DELETE) {
-  //     Serial.print("Del");
-  //   } else {
-  //     // otherwise, just print all normal characters
-  //     Serial.print(c);
-  //   }
-  // }
+  // keyboard input
+  if (keyboard.available()) {
+    char c = keyboard.read();
+    // check for some of the special keys
+    if (c == PS2_ENTER) {
+      Serial.println();
+    } else if (c == PS2_TAB) {
+      Serial.print("Tab");
+    } else if (c == PS2_ESC) {
+      Serial.print("ESC");
+    } else if (c == PS2_PAGEDOWN) {
+      Serial.print("PgDn");
+    } else if (c == PS2_PAGEUP) {
+      Serial.print("PgUp");
+    } else if (c == PS2_LEFTARROW) {
+      Serial.print("Left");
+    } else if (c == PS2_RIGHTARROW) {
+      Serial.print("Right");
+    } else if (c == PS2_UPARROW) {
+      Serial.print("Up");
+    } else if (c == PS2_DOWNARROW) {
+      Serial.print("Down");
+    } else if (c == PS2_DELETE) {
+      Serial.print("Del");
+    } else if (c == 33) { // !
+      // second
+      // myRTC.setAlarm(DS3232RTC::ALM1_EVERY_SECOND, 0, 0, 0, 1);
+    } else if (c == 64) { // @
+      // seconds
+      // myRTC.setAlarm(DS3232RTC::ALM1_MATCH_SECONDS, 3, 0, 0, 1);
+    } else if (c == 35) { // #
+      // minutes
+      // myRTC.setAlarm(DS3232RTC::ALM1_MATCH_MINUTES, 5, 30, 0, 1); 
+    } else if (c == 36) { // $
+      // hours
+      // myRTC.setAlarm(DS3232RTC::ALM1_MATCH_HOURS, 3, 3, 3, 1); 
+    } else if (c == 37) { // %
+      // date
+      // myRTC.setAlarm(DS3232RTC::ALM1_MATCH_DATE, 3, 3, 3, 3); 
+    } else if (c == 94) { // ^
+      // day
+      // myRTC.setAlarm(DS3232RTC::ALM1_MATCH_DAY, 3, 3, 3, dowWednesday); 
+    } else {
+      // otherwise, just print all normal characters
+      Serial.print(c);
+    }
+  }
 
   // check for input to set the RTC, minimum length is 12, i.e. yy,m,d,h,m,s
   if (Serial.available() >= 12) {
