@@ -416,7 +416,7 @@ void loop() {
       secondAlarm = true;
       thirdAlarm = false;
       noAlarm = false;
-    } else if (c == 35) {  // #
+    } else if (c == 69 || c == 101) {  // #
       // minutes
       myRTC.setAlarm(DS3232RTC::ALM1_MATCH_MINUTES, 5, 30, 0, 1);
       Serial << "set alarm 3";
@@ -424,31 +424,31 @@ void loop() {
       secondAlarm = false;
       thirdAlarm = true;
       noAlarm = false;
-    } else if (c == 36) {  // $
+    } else if (c == 36) {  // enables alarm with "$" in keyboard
       // hours
       myRTC.setAlarm(DS3232RTC::ALM1_MATCH_HOURS, 3, 3, 3, 1);
       digitalWrite(BUZZER, HIGH);
-    } else if (c == 37) {  // %
+    } else if (c == 37) {  // enables alarm with "%" in keyboard
       // date
       myRTC.setAlarm(DS3232RTC::ALM1_MATCH_DATE, 3, 3, 3, 3);
       digitalWrite(BUZZER, HIGH);
-    } else if (c == 94) {  // ^
+    } else if (c == 94) {  // enables alarm with "^" in keyboard
       // day
       myRTC.setAlarm(DS3232RTC::ALM1_MATCH_DAY, 3, 3, 3, dowWednesday);
       digitalWrite(BUZZER, HIGH);
-    } else if (c == 49 && firstAlarm == true) {  // 1
+    } else if (c == 49 && firstAlarm == true) {  // disables alarm with "1" in keyboard
       digitalWrite(BUZZER, LOW);
       firstAlarm = false;
       noAlarm = true;
       myRTC.alarm(DS3232RTC::ALARM_1);
       myRTC.clearAlarm(DS3232RTC::ALARM_1);
-    } else if (c == 50 && secondAlarm == true) {  // 2
+    } else if (c == 50 && secondAlarm == true) {  // disables alarm with "2" in keyboard
       digitalWrite(BUZZER, LOW);
       secondAlarm = false;
       noAlarm = true;
       myRTC.alarm(DS3232RTC::ALARM_1);
       myRTC.clearAlarm(DS3232RTC::ALARM_1);
-    } else if (c == 51 && thirdAlarm == true) {  // 3
+    } else if (c == 51 && thirdAlarm == true) {  // disables alarm with "3" in keyboard
       digitalWrite(BUZZER, LOW);
       thirdAlarm = false;
       noAlarm = true;
@@ -542,7 +542,6 @@ void loop() {
       Serial << " ALARM 2";
       snprintf(buffer, sizeof(buffer), "2. 5024201073 Iqbal Muchlis");
       digitalWrite(BUZZER, HIGH);
-
     } else if (thirdAlarm == true && myRTC.checkAlarm(DS3232RTC::ALARM_1)) {
       Serial << " ALARM 3";
       snprintf(buffer, sizeof(buffer), "3. Keyboard Input");
