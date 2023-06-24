@@ -1,7 +1,7 @@
-# Clock with Dot Matrix display, final project
+# Digital Alarm Clock with Dot Matrix display
 
-## Embedded Systems Course
-A month long solo project
+## Part of Embedded Systems Course
+A month long final project 
 
 ### Features
 1. Real time clock, Calendar, Temperature display
